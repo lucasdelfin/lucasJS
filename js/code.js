@@ -1,114 +1,198 @@
-let alumnos = [];
+ // Variables
+ const baseDeDatos = [
+    {
+        id: 1,
+        nombre: 'Patata',
+        precio: 1,
+        imagen: 'patatas.jpg'
+    },
+    {
+        id: 2,
+        nombre: 'Cebolla',
+        precio: 1.2,
+        imagen: 'cebolla.jpg'
+    },
+    {
+        id: 3,
+        nombre: 'Calabacin',
+        precio: 2.1,
+        imagen: 'calabacin.jpg'
+    },
+    {
+        id: 4,
+        nombre: 'Fresas',
+        precio: 0.6,
+        imagen: 'fresas.jpg'
+    }
 
+];
 
+let carrito = [];
+const divisa = '€';
+const DOMitems = document.querySelector('#items');
+const DOMcarrito = document.querySelector('#carrito');
+const DOMtotal = document.querySelector('#total');
+const DOMbotonVaciar = document.querySelector('#boton-vaciar');
+const miLocalStorage = window.localStorage;
 
-while (alumnos.length < 5) {
-    let alumnoIngreso = prompt('Bienvenidos a la clase, Ingresa tu nombre');
-    alumnos.push(alumnoIngreso);
-};
+// Funciones
 
-alert('Bienvenido/a ' + alumnos[0] + '\nBienvenido/a ' + alumnos[1] + '\nBienvenido/a ' + alumnos[2] + '\nBienvenido/a ' + alumnos[3] + '\nBienvenido/a ' + alumnos[4]);
+/**
+* Dibuja todos los productos a partir de la base de datos. No confundir con el carrito
+*/
+function renderizarProductos() {
+    baseDeDatos.forEach((item) => {
+        // Estructura
+        const miNodo = document.createElement('div');
+        miNodo.classList.add('card', 'col-sm-4');
+        // Body
+        const miNodoCardBody = document.createElement('div');
+        miNodoCardBody.classList.add('card-body');
+        // Titulo
+        const miNodoTitle = document.createElement('h5');
+        miNodoTitle.classList.add('card-title');
+        miNodoTitle.textContent = item.nombre;
+        // Imagen
+        const miNodoImagen = document.createElement('img');
+        miNodoImagen.classList.add('img-fluid');
+        miNodoImagen.setAttribute('src', './imagenes/' + item.imagen);
+        // Precio
+        const miNodoPrecio = document.createElement('p');
+        miNodoPrecio.classList.add('card-text');
+        miNodoPrecio.textContent = `${item.precio}${divisa}`;
+        // Boton 
+        const miNodoBoton = document.createElement('button');
+        miNodoBoton.classList.add('btn', 'btn-primary');
+        miNodoBoton.textContent = '+';
+        miNodoBoton.setAttribute('marcador', item.id);
+        miNodoBoton.addEventListener('click', anyadirProductoAlCarrito);
+        // Insertamos
+        miNodoCardBody.appendChild(miNodoImagen);
+        miNodoCardBody.appendChild(miNodoTitle);
+        miNodoCardBody.appendChild(miNodoPrecio);
+        miNodoCardBody.appendChild(miNodoBoton);
+        miNodo.appendChild(miNodoCardBody);
+        DOMitems.appendChild(miNodo);
+    });
+}
 
-/// objetos con arays//
-function clases(elegido, auto, precio, clases) {
-    this.elegido = elegido;
-    this.auto = auto;
-    this.precio = precio;
-    this.clases = clases;
-};
+/**
+* Evento para añadir un producto al carrito de la compra
+*/
+function anyadirProductoAlCarrito(evento) {
+    // Anyadimos el Nodo a nuestro carrito
+    carrito.push(evento.target.getAttribute('marcador'))
+    // Actualizamos el carrito 
+    renderizarCarrito();
+    // Actualizamos el LocalStorage
+    guardarCarritoEnLocalStorage();
+}
 
+/**
+* Dibuja todos los productos guardados en el carrito
+*/
+function renderizarCarrito() {
+    // Vaciamos todo el html
+    DOMcarrito.textContent = '';
+    // Quitamos los duplicados
+    const carritoSinDuplicados = [...new Set(carrito)];
+    // Generamos los Nodos a partir de carrito
+    carritoSinDuplicados.forEach((item) => {
+        // Obtenemos el item que necesitamos de la variable base de datos
+        const miItem = baseDeDatos.filter((itemBaseDatos) => {
+            // ¿Coincide las id? Solo puede existir un caso
+            return itemBaseDatos.id === parseInt(item);
+        });
+        // Cuenta el número de veces que se repite el producto
+        const numeroUnidadesItem = carrito.reduce((total, itemId) => {
+            // ¿Coincide las id? Incremento el contador, en caso contrario no mantengo
+            return itemId === item ? total += 1 : total;
+        }, 0);
+        // Creamos el nodo del item del carrito
+        const miNodo = document.createElement('li');
+        miNodo.classList.add('list-group-item', 'text-right', 'mx-2');
+        miNodo.textContent = `${numeroUnidadesItem} x ${miItem[0].nombre} - ${miItem[0].precio}${divisa}`;
+        // Boton de borrar
+        const miBoton = document.createElement('button');
+        miBoton.classList.add('btn', 'btn-danger', 'mx-5');
+        miBoton.textContent = 'X';
+        miBoton.style.marginLeft = '1rem';
+        miBoton.dataset.item = item;
+        miBoton.addEventListener('click', borrarItemCarrito);
+        // Mezclamos nodos
+        miNodo.appendChild(miBoton);
+        DOMcarrito.appendChild(miNodo);
+    });
+    // Renderizamos el precio total en el HTML
+    DOMtotal.textContent = calcularTotal();
+}
 
-let clases2 = new clases("curso intermedio", "Volskwagen Up", "15,000$", "15 clases");
-console.log(clases2);
-let clases3 = new clases("curso avanzado", "Gold trend", "10.000$", "5 clases")
-console.log(clases3);
-let clases4 = new clases("alquiler de auto para examen", "gold trend/Up", "3.000$");
-eligeClase();
-function eligeClase() {
-    let curso = parseInt(prompt(" selecciona el curso que desea tomar\n 1 para curso basico\n 2 para curso intermedio\n 3 para curso avanzado\n 4\n para alquiler de auto examen "));
-    switch (curso) {
-    
-        case 1:
-            let clase = new clases("curso basico", "gold trend", "25.000$", "20 clases");
-            alert("Tu elegiste el: " + clase.elegido + "\nvas a contar con un auto: " + clase.auto + "\n vas a contar con :" + clase.clases + "\n el precio es de:" + clase.precio);
-            break;
-        case 2:
-            let claseIntermedia = new clases("curso intermedio", "Volskwagen Up", "20,000$", "15 clases");
-            alert("Tu elegiste el: " + claseIntermedia.elegido + "\nvas a contar con un auto: " + claseIntermedia.auto + "\n vas a contar con :" + claseIntermedia.clases + "\n el precio es de:" + claseIntermedia.precio);
-            break;
-            case 3:
-                let claseAvanzada = new clases("curso avanzado", "Volskwagen Up", "15,000$", "5 clases");
-            alert("Tu elegiste el: " + claseAvanzada.elegido + "\nvas a contar con un auto: " + claseAvanzada.auto + "\n vas a contar con :" + claseAvanzada.clases + "\n el precio es de:" + claseAvanzada.precio);
-            break;
-        
+/**
+* Evento para borrar un elemento del carrito
+*/
+function borrarItemCarrito(evento) {
+    // Obtenemos el producto ID que hay en el boton pulsado
+    const id = evento.target.dataset.item;
+    // Borramos todos los productos
+    carrito = carrito.filter((carritoId) => {
+        return carritoId !== id;
+    });
+    // volvemos a renderizar
+    renderizarCarrito();
+    // Actualizamos el LocalStorage
+    guardarCarritoEnLocalStorage();
 
-    
+}
+
+/**
+ * Calcula el precio total teniendo en cuenta los productos repetidos
+ */
+function calcularTotal() {
+    // Recorremos el array del carrito 
+    return carrito.reduce((total, item) => {
+        // De cada elemento obtenemos su precio
+        const miItem = baseDeDatos.filter((itemBaseDatos) => {
+            return itemBaseDatos.id === parseInt(item);
+        });
+        // Los sumamos al total
+        return total + miItem[0].precio;
+    }, 0).toFixed(2);
+}
+
+/**
+* Varia el carrito y vuelve a dibujarlo
+*/
+function vaciarCarrito() {
+    // Limpiamos los productos guardados
+    carrito = [];
+    // Renderizamos los cambios
+    renderizarCarrito();
+    // Borra LocalStorage
+    localStorage.clear();
+
+}
+
+function guardarCarritoEnLocalStorage () {
+    miLocalStorage.setItem('carrito', JSON.stringify(carrito));
+}
+
+function cargarCarritoDeLocalStorage () {
+    // ¿Existe un carrito previo guardado en LocalStorage?
+    if (miLocalStorage.getItem('carrito') !== null) {
+        // Carga la información
+        carrito = JSON.parse(miLocalStorage.getItem('carrito'));
     }
 }
 
+// Eventos
+DOMbotonVaciar.addEventListener('click', vaciarCarrito);
 
-
-function Cotizar() {
-    //se crea una variable que guarde el valor ingresado por el usuario (cantidad de clases requeridas por el usuario) //
-    let num_clases = prompt("Cuantas clases de manejo tomara : ");
-
-    //revisa si el checkbox esta selecionado retorna true si esta seleccionado//
-    let estado_alquiler = prompt("Querra alquilar un vehiculo (escriba 1 para si y 0 para no) : ");
-
-    //aqui se esta verificando si el usuario quiere mas de 5 clases para hacerle un descuento del 10% del costo total //
-    if (num_clases >= 5) {
-        let costo_clase = (2000 * num_clases) - ((2000 * num_clases) / 10);
-        console.log("Precio total por la clases de manejo : " + costo_clase)
-    }
-    else {
-        let costo_clase = 2000 * num_clases;
-        console.log("Precio total por la clases de manejo :" + costo_clase);
-    }
-
-
-    //verifica si esta selecionado el checkbox y lo suma al costo final //
-    if (estado_alquiler) {
-        console.log("Precio por alquiler del vehiculo: " + 2500);
-        console.log("Precio total : " + (costo_clase + 2500));
-    }
-    else {
-        console.log("Precio total : " + costo_clase);
-    }
-}
-
-// arrays //
-const arrayVacio = [];
-const carrito = [];
-
-const cursoManejo = ['Curso basico', 'Curso intermedio', 'Curso avanzado', 'Alquiler auto de rendir']
-//const numeros = [1, 2, 3, 4, 5, 6, 7, 8, 9];//
-/*const mix=[ 'hola' , 12,true,3.14,[1,2,3]]
-const hermione =['castaño' , 'gato',17,'granger',true] */
-console.log(cursoManejo[3]);
+// Inicio
+cargarCarritoDeLocalStorage();
+renderizarProductos();
+renderizarCarrito();
 
 
 
-//forEach 
-
-let aunEstudiante = ["Daniel", "Camila", "Lucas", "Nicolas", "Demian", "Maria Luz", "Otto", "Milo"]
-let yaGraduado = []
-
-function estudianteGraduado(estudiante, indice) {
-    let objeto = { nombre: estudiante, posicion: indice + 1 }
-    yaGraduado[indice] = objeto
-}
-
-aunEstudiante.forEach((nombre, indice) => estudianteGraduado(nombre, indice));
-
-console.log(yaGraduado);
-
-
-
-
-
-
-
-
-
-
-
+/*clase 12 operadores avanzados
+stock > 0 ? alert('el sotck es' + stock) : alert('producto sin stock'); */
